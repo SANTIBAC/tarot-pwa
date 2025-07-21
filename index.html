@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tarot 12 Cartas</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    text-align: center;
+    background: url("images/fondo.jpg") no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+  }
+  .card-container {
+    margin: 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .card {
+    width: 200px;
+    height: 320px;
+    border: 1px solid #8e44ad;
+    margin: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 15px rgba(142, 68, 173, 0.7);
+    border-radius: 8px;
+    overflow: hidden;
+    color: #f5e6ff;
+    text-shadow: 0 0 5px #9b59b6;
+  }
+  .card img {
+    width: 100%;
+    height: 65%;
+    object-fit: cover;
+    border-bottom: 1px solid #8e44ad;
+  }
+  .card p {
+    margin: 5px;
+    font-size: 13px;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    font-family: 'Georgia', serif;
+    color: #f5e6ff;
+    text-shadow: 0 0 2px #9b59b6, 0 0 5px #8e44ad;
+  }
+  .card p strong {
+    display: block;
+    font-size: 15px;
+    color: #ffeaa7;
+    text-shadow: 0 0 3px #dcdde1, 0 0 8px #9b59b6;
+  }
+  .controls {
+    margin: 20px 0;
+  }
+  .controls button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  .controls button:hover {
+    background-color: #444;
+  }
+  #countdown {
+    margin-top: 10px;
+    color: #f5e6ff;
+    font-style: italic;
+  }
+
+  @media (max-width: 600px) {
+    .card {
+      width: 90%;
+      height: auto;
+    }
+  }
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#2c003e">
+
+<!-- iOS Support -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+</head>
+<body>
+<h1>Tarot 12 Cartas</h1>
+<div class="card-container"></div>
+<div class="controls">
+  <button id="shuffle">Barajar</button>
+  <button id="draw">Extraer</button>
+</div>
+<div id="countdown"></div>
+
+<script>
+const cardContainer = document.querySelector('.card-container');
+const shuffleButton = document.getElementById('shuffle');
+const drawButton = document.getElementById('draw');
+const countdown = document.getElementById('countdown');
+
+let drawCount = 0;
+let sessionCards = [];
+
+const tarotCards = [
+  { name: "El Mago", image: "images/1.jpg", interpretation: "Simboliza el poder personal, la habilidad y la astucia. Indica que tienes la capacidad de manifestar tus deseos." },
+  { name: "La Sacerdotisa", image: "images/2.jpg", interpretation: "Simboliza la intuición y el conocimiento oculto. Sugiere confiar en tu intuición y explorar lo desconocido." },
+  { name: "La Emperatriz", image: "images/3.jpg", interpretation: "Simboliza la abundancia, la fertilidad y la creatividad. Indica un período de crecimiento y prosperidad." },
+  { name: "El Emperador", image: "images/4.jpg", interpretation: "Simboliza el poder, la autoridad y la estructura. Invita a tomar el control y asumir responsabilidades." },
+  { name: "El Hierofante", image: "images/5.jpg", interpretation: "Simboliza la tradición, el aprendizaje espiritual y la guía. Busca la sabiduría en fuentes confiables." },
+  { name: "Los Enamorados", image: "images/6.jpg", interpretation: "Simbolizan el amor, las decisiones y la armonía. Sugiere tomar decisiones importantes con el corazón." },
+  { name: "El Carro", image: "images/7.jpg", interpretation: "Simboliza el triunfo, la determinación y el avance. Señala que puedes superar obstáculos con disciplina." },
+  { name: "La Justicia", image: "images/8.jpg", interpretation: "Simboliza la verdad, la equidad y la responsabilidad. Llama a actuar con integridad y asumir consecuencias." },
+  { name: "El Ermitaño", image: "images/9.jpg", interpretation: "Simboliza la introspección y la búsqueda de sabiduría. Sugiere un momento de reflexión personal." },
+  { name: "La Rueda de la Fortuna", image: "images/10.jpg", interpretation: "Simboliza el destino, los ciclos y el cambio. Indica que los eventos están fuera de tu control inmediato." },
+  { name: "La Fuerza", image: "images/11.jpg", interpretation: "Simboliza el coraje, la paciencia y la compasión. Indica que puedes dominar tus miedos con serenidad." },
+  { name: "El Colgado", image: "images/12.jpg", interpretation: "Simboliza la entrega, la perspectiva y la pausa. Sugiere ver las cosas desde otro ángulo y tener paciencia." }
+];
+
+// ----- BLOQUEO -----
+function setBlock24H() {
+  const until = Date.now() + 24 * 60 * 60 * 1000;
+  localStorage.setItem("tarotBlockUntil", until.toString());
+}
+
+function isBlocked() {
+  const until = parseInt(localStorage.getItem("tarotBlockUntil") || "0", 10);
+  return Date.now() < until;
+}
+
+function getUnlockDate() {
+  const until = parseInt(localStorage.getItem("tarotBlockUntil") || "0", 10);
+  return new Date(until).toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+}
+
+function updateCountdown() {
+  if (isBlocked()) {
+    countdown.textContent = `⏳ Las energías necesitan reposar. Vuelve a las ${getUnlockDate()}.`;
+    drawButton.disabled = true;
+  } else {
+    countdown.textContent = "";
+    drawButton.disabled = false;
+  }
+}
+
+// ----- SESIÓN -----
+function saveSession() {
+  localStorage.setItem("tarotDrawnCards", JSON.stringify(sessionCards.slice(0, drawCount)));
+}
+
+function loadPreviousSession() {
+  const stored = localStorage.getItem("tarotDrawnCards");
+  if (stored) {
+    const drawn = JSON.parse(stored);
+    drawn.forEach(card => {
+      const cardElement = document.createElement('div');
+      cardElement.classList.add('card');
+      cardElement.innerHTML = `
+        <img src="${card.image}" alt="${card.name}">
+        <p><strong>${card.name}</strong></p>
+        <p>${card.interpretation}</p>
+      `;
+      cardContainer.appendChild(cardElement);
+    });
+    drawCount = drawn.length;
+    if (drawCount >= 5) {
+      drawButton.disabled = true;
+    }
+  }
+}
+
+// ----- FUNCIONES -----
+function shuffleCards() {
+  if (isBlocked()) {
+    updateCountdown();
+    return;
+  }
+  sessionCards = [...tarotCards].sort(() => Math.random() - 0.5);
+  cardContainer.innerHTML = '';
+  drawCount = 0;
+  localStorage.removeItem("tarotDrawnCards");
+  drawButton.disabled = false;
+}
+
+function drawCard() {
+  if (isBlocked()) {
+    updateCountdown();
+    return;
+  }
+
+  if (drawCount >= 5) return;
+
+  const card = sessionCards[drawCount];
+  const cardElement = document.createElement('div');
+  cardElement.classList.add('card');
+  cardElement.innerHTML = `
+    <img src="${card.image}" alt="${card.name}">
+    <p><strong>${card.name}</strong></p>
+    <p>${card.interpretation}</p>
+  `;
+  cardContainer.appendChild(cardElement);
+  drawCount++;
+
+  saveSession();
+
+  if (drawCount >= 5) {
+    drawButton.disabled = true;
+    setBlock24H();
+    updateCountdown();
+  }
+}
+
+// ----- EVENTOS -----
+shuffleButton.addEventListener('click', shuffleCards);
+drawButton.addEventListener('click', drawCard);
+
+// ----- INICIO -----
+updateCountdown();
+shuffleCards();
+loadPreviousSession();
+setInterval(updateCountdown, 60000);
+// Registro del Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('Service Worker registrado:', reg.scope))
+    .catch(err => console.error('Fallo en el registro del Service Worker:', err));
+}
+
+</script>
+</body>
+</html>
