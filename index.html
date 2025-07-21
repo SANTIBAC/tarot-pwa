@@ -19,7 +19,21 @@
   h1 {
   color: white;
   text-shadow: 0 0 5px #9b59b6, 0 0 10px #8e44ad;
+}  
+.intro {
+  max-width: 800px;
+  margin: 10px auto;
+  padding: 10px 20px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 16px;
+  font-family: 'Georgia', serif;
+  text-align: center;
+  border-radius: 8px;
+  line-height: 1.6;
+  box-shadow: 0 0 10px rgba(155, 89, 182, 0.6);
 }
+
 .card-container {
   margin: 20px 0;
   display: flex;
@@ -132,6 +146,12 @@
 </head>
 <body>
 <h1>Tarot 12 Cartas</h1>
+<div class="intro">
+  <p>🃏 Extrae hasta 5 cartas para recibir tu mensaje.</p>
+  <p>🔄 Puedes barajar antes de sacar la quinta carta.</p>
+  <p>⏳ Tras sacar la quinta, deberás esperar 24 horas para una nueva lectura.</p>
+</div>
+
 <div class="card-container"></div>
 <div class="controls">
   <button id="shuffle">Barajar</button>
